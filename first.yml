@@ -1,0 +1,33 @@
+name: yml-pipeline
+trigger: none
+
+pool: 'zelectric_pool'
+
+steps:
+# - task: TerraformInstaller@1
+#   inputs:
+#     terraformVersion: 'latest'
+
+- task: TerraformTaskV4@4
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+    backendServiceArm: 'hope'
+    backendAzureRmResourceGroupName: 'BigBadDeves'
+    backendAzureRmStorageAccountName: 'bigstorageacc'
+    backendAzureRmContainerName: 'bloby'
+    backendAzureRmKey: 'terraform.tfstate'
+
+- task: TerraformTaskV4@4
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+    environmentServiceNameAzureRM: 'hope'
+- task: TerraformTaskV4@4
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+    environmentServiceNameAzureRM: 'hope'
