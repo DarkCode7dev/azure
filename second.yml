@@ -1,0 +1,32 @@
+name: yml-pipeline-learning
+trigger: none
+pool: 'zelectric_pool' 
+
+steps:
+  - task: TerraformTaskV4@4
+    displayName: 'Initialize Terraform'
+    inputs:
+      provider: 'azurerm'
+      command: 'init'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+      backendServiceArm: 'hope'
+      backendAzureRmResourceGroupName: 'BigBadDeves'
+      backendAzureRmStorageAccountName: 'bigstorageacc'
+      backendAzureRmContainerName: 'bloby'
+      backendAzureRmKey: 'terraform.tfstate'
+  
+  - task: TerraformTaskV4@4
+    displayName: 'Plan Terraform'
+    inputs:
+      provider: 'azurerm'
+      command: 'plan'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+      environmentServiceNameAzureRM: 'hope'
+  
+  - task: TerraformTaskV4@4
+    displayName: 'Apply Terraform'
+    inputs:
+      provider: 'azurerm'
+      command: 'apply'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+      environmentServiceNameAzureRM: 'hope'
