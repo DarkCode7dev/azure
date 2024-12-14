@@ -1,0 +1,52 @@
+name: yml-pipeline-jobs
+trigger: none
+pool: 'zelectric_pool' 
+
+jobs:
+  - job: TerraformInit
+    displayName: TerraformInit
+    steps:
+    - task: CmdLine@2
+      inputs:
+        script: 'echo $(System.DefaultWorkingDirectory)'
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+        commandOptions: '-upgrade'
+        backendServiceArm: 'hope'
+        backendAzureRmResourceGroupName: 'BigBadDeves'
+        backendAzureRmStorageAccountName: 'bigstorageacc'
+        backendAzureRmContainerName: 'bloby'
+        backendAzureRmKey: 'terraform.tfstate'
+
+  -  job: Terraformplan
+     dependsOn: TerraformInit
+     displayName: Terraform plan
+     steps:
+     - task: CmdLine@2
+       inputs:
+        script: 'echo $(System.DefaultWorkingDirectory)'
+
+     - task: TerraformTaskV4@4
+       displayName: 'Terraform init'
+       inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+        commandOptions: '-upgrade'
+        backendServiceArm: 'hope'
+        backendAzureRmResourceGroupName: 'BigBadDeves'
+        backendAzureRmStorageAccountName: 'bigstorageacc'
+        backendAzureRmContainerName: 'bloby'
+        backendAzureRmKey: 'terraform.tfstate'
+     - task: TerraformTaskV4@4
+       inputs:
+         provider: 'azurerm'
+         command: 'plan'
+         workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+         environmentServiceNameAzureRM: 'hope'
+         
+     
