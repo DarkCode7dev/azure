@@ -1,0 +1,66 @@
+name: yml-pipeline-jobs
+trigger: none
+pool: 'zelectric_pool' 
+
+jobs:
+  - job: TerraformInitAndPlan
+    displayName: Terraform Init And Plan
+    steps:
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+        commandOptions: '-upgrade'
+        backendServiceArm: 'hope'
+        backendAzureRmResourceGroupName: 'BigBadDeves'
+        backendAzureRmStorageAccountName: 'bigstorageacc'
+        backendAzureRmContainerName: 'bloby'
+        backendAzureRmKey: 'terraform.tfstate'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform Plan'
+      inputs:
+         provider: 'azurerm'
+         command: 'plan'
+         workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+         environmentServiceNameAzureRM: 'hope'
+  - job: ManualValidationJob
+    dependsOn: TerraformInitAndPlan
+    displayName: ManualValidationJob
+    pool: server
+    steps:
+
+    - task: ManualValidation@1
+      inputs:
+        notifyUsers: 'deveshgoswami@520@gmail.com'
+        instructions: 'Please validate the plan'
+  
+  - job: TerraformApply
+    dependsOn: ManualValidationJob
+    displayName: Terraform Apply
+    steps:
+    - task: TerraformTaskV4@4
+      displayName: 'Terraform init'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+        commandOptions: '-upgrade'
+        backendServiceArm: 'hope'
+        backendAzureRmResourceGroupName: 'BigBadDeves'
+        backendAzureRmStorageAccountName: 'bigstorageacc'
+        backendAzureRmContainerName: 'bloby'
+        backendAzureRmKey: 'terraform.tfstate'
+
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/todoapp_infra'
+        environmentServiceNameAzureRM: 'hope'
+    
+
+         
