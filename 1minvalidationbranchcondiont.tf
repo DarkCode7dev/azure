@@ -1,3 +1,4 @@
+# this pipeline apply will not work in feature branch but will work in main branch so in feature branch only upto init plan will work
 trigger: none 
 pool: 'zelectric_pool'
 stages:
