@@ -1,0 +1,44 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+parameters:
+  - name: Rollbackversion
+    displayName: Rollbackversion
+    type: string
+pool: zelectric_pool
+stages:
+  - stage: DeployStage
+    displayName: Deploy Stage
+    jobs: 
+    - job: DeployJob
+      displayName: Deploy Job
+      steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'specific'
+          project: 'e2a497ba-1874-444b-a6db-8ab232393cb7'
+          definition: '12'
+          buildVersionToDownload: 'specific'
+          pipelineId: '${{parameters.Rollbackversion}}'
+          artifactName: 'todoui'
+          targetPath: '$(Build.ArtifactStagingDirectory)'
+      
+      - task: SSH@0
+        inputs:
+          sshEndpoint: 'frontendvm'
+          runOptions: 'commands'
+          commands: |
+            sudo chmod -R 777 /var/www/html
+            sudo rm -rf /var/www/html/*
+          readyTimeout: '20000'
+      - task: CopyFilesOverSSH@0
+        inputs:
+          sshEndpoint: 'frontendvm'
+          sourceFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: '**'
+          targetFolder: '/var/www/html'
+          readyTimeout: '20000'
+
