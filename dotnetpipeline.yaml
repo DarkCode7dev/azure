@@ -1,0 +1,80 @@
+trigger: none
+pool: zelectric_pool
+
+stages:
+  - stage: BuildStage
+    jobs:
+    - job: BuildJob
+      displayName: Build .NET 8 App
+      steps: 
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: 'sdk'
+          version: '8.x'
+          installationPath: $(Agent.ToolsDirectory)/dotnet
+
+      - script: dotnet restore Pipeline.sln
+        displayName: Restore Dependencies
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+      - script: dotnet build Pipeline.sln --configuration Release --no-restore
+        displayName: Build Solution
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+      - script: dotnet publish Pipeline.sln --configuration Release --output $(Build.ArtifactStagingDirectory)/publish
+        displayName: Publish .NET App
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish .NET App Artifacts
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)/publish'
+          artifact: 'dotnetapp'
+          publishLocation: 'pipeline'
+
+  - stage: DeployStage
+    displayName: Deploy Stage
+    jobs: 
+    - job: DeployJob
+      displayName: Deploy to Server
+      steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'current'
+          artifactName: 'dotnetapp'
+          targetPath: '$(Build.ArtifactStagingDirectory)'
+
+      - task: SSH@0
+        displayName: Stop Existing Service and Clean Directory
+        inputs:
+          sshEndpoint: 'Dotnettesting'
+          runOptions: 'commands'
+          commands: |
+            echo "Stopping kestrel-pipelineapp.service if running..."
+            sudo systemctl stop kestrel-pipelineapp.service || echo "Service not running."
+
+            echo "Cleaning old files..."
+            sudo rm -rf /var/www/pipelineapp/*
+            sudo mkdir -p /var/www/pipelineapp
+            sudo chown -R $USER:$USER /var/www/pipelineapp
+          readyTimeout: '20000'
+
+      - task: CopyFilesOverSSH@0
+        displayName: Copy Files to VM
+        inputs:
+          sshEndpoint: 'Dotnettesting'
+          sourceFolder: '$(Build.ArtifactStagingDirectory)'
+          contents: '**'
+          targetFolder: '/var/www/pipelineapp'
+          readyTimeout: '20000'
+
+      - task: SSH@0
+        displayName: Start .NET App
+        inputs:
+          sshEndpoint: 'Dotnettesting'
+          runOptions: 'commands'
+          commands: |
+            echo "Starting kestrel-pipelineapp.service..."
+            sudo systemctl start kestrel-pipelineapp.service
+          readyTimeout: '20000'
